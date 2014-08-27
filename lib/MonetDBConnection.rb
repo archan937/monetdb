@@ -122,7 +122,6 @@ class MonetDBConnection
   def real_connect
 
     server_challenge = retrieve_server_challenge()
-    print "CHALLENGE: " + server_challenge.to_s
     if server_challenge != nil
       salt = server_challenge.split(':')[0]
       @server_name = server_challenge.split(':')[1]
