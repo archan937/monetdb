@@ -114,6 +114,39 @@ class MonetDB
   LANG_XQUERY         = "xquery"
   XQUERY_OUTPUT_SEQ   = true # use MonetDB XQuery's output seq
 
+  def self.logger=(logger)
+    @logger = logger
+  end
+
+  def self.logger
+    @logger
+  end
+
+  def self.configurations=(configurations)
+    @configurations = configurations.inject({}){|h, (k, v)| h[k.to_s] = v; h}
+  end
+
+  def self.configurations
+    @configurations
+  end
+
+  def self.establish_connection(arg)
+    config = arg.is_a?(Hash) ? arg : (configurations || {})[arg.to_s]
+    if config
+      @connection = MonetDB.new.tap do |connection|
+        config = {language: "sql", encryption: "SHA1"}.merge(config.inject({}){|h, (k, v)| h[k.to_sym] = v; h})
+        connection.instance_variable_set(:@config, config)
+        connection.connect *config.values_at(:username, :password, :language, :host, :port, :database, :encryption)
+      end
+    else
+      raise Error, "Unable to establish connection for #{arg.inspect}"
+    end
+  end
+
+  def self.connection
+    @connection
+  end
+
   # Establish a new connection.
   #   * user      : username (default is monetdb)
   #   * passwd    : password (default is monetdb)
@@ -144,6 +177,35 @@ class MonetDB
       @data.execute(q)
     end
     @data
+  end
+
+  # Send a <b>user submitted select</b> query to the server and store the response.
+  #
+  # Returns an array of arrays with casted values.
+  def select_rows(qry)
+    start = Time.now
+    data = query(qry)
+    log :info, "\n  [1m[35mSQL (#{((Time.now - start) * 1000).round(1)}ms)[0m  #{qry}[0m"
+    column_types = data.instance_variable_get(:@header)["columns_type"]
+    types = data.instance_variable_get(:@header)["columns_name"].collect{|x| column_types[x]}
+    data.fetch_all.collect do |array|
+      row = []
+      array.each_with_index do |value, index|
+        row << begin
+          unless value == "NULL"
+            case types[index]
+            when "bigint", "int"
+              value.to_i
+            when "double"
+              value.to_f
+            else
+              value.force_encoding("UTF-8")
+            end
+          end
+        end
+      end
+      row
+    end
   end
 
   # Returns whether a "connection" object exists.
@@ -189,6 +251,13 @@ class MonetDB
   def close
     @connection.disconnect
     @connection = nil
+  end
+
+private
+
+  # Log message.
+  def log(type, msg)
+    MonetDB.logger.send type, msg  if MonetDB.logger
   end
 
 end
