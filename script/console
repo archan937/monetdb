@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+
+require "bundler"
+Bundler.require :default, :development
+
+puts "Loading MonetDB development environment (#{MonetDB::VERSION})"
+Pry.start

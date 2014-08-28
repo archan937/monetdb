@@ -1,1 +1,8 @@
+.DS_Store
+.bundle
 .yardoc
+.rvmrc
+Gemfile.lock
+doc
+pkg
+test/coverage

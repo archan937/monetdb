@@ -14,4 +14,10 @@ Gem::Specification.new do |gem|
   gem.name          = "monetdb"
   gem.require_paths = ["lib"]
   gem.version       = MonetDB::VERSION
+
+  gem.add_development_dependency "rake"
+  gem.add_development_dependency "pry"
+  gem.add_development_dependency "simplecov"
+  gem.add_development_dependency "minitest"
+  gem.add_development_dependency "mocha"
 end
