@@ -60,7 +60,7 @@ class MonetDB
         @record_set = record_set.split("\t]\n")
 
         if @record_set.length != @query['rows'].to_i
-          raise MonetDBQueryError, "Warning: Query #{@query['id']} declared to result in #{@query['rows']} but #{@record_set.length} returned instead"
+          raise MonetDB::QueryError, "Warning: Query #{@query['id']} declared to result in #{@query['rows']} but #{@record_set.length} returned instead"
         end
       elsif (@lang == XQUERY and ! XQUERY_OUTPUT_SEQ)
         return data # return an xml file
@@ -136,7 +136,7 @@ class MonetDB
         end
         @index = Integer(rows.length)
       else
-        raise MonetDBDataError, "There is no record set currently available"
+        raise MonetDB::DataError, "There is no record set currently available"
       end
       rows
     end
@@ -183,7 +183,7 @@ class MonetDB
             @action = Q_CREATE
           end
         elsif row[0].chr == MSG_INFO
-          raise MonetDBQueryError, row
+          raise MonetDB::QueryError, row
         elsif row[0].chr == MSG_SCHEMA_HEADER
           # process header data
           @header << row
