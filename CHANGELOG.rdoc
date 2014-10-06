@@ -1,5 +1,9 @@
 = MonetDB CHANGELOG
 
+== Version 0.1.2 (October 6, 2014)
+
+* Simplified MonetDB#select_rows gaining performance receiving the query result set
+
 == Version 0.1.1 (August 28, 2014)
 
 * Fixed raising several errors
