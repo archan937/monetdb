@@ -183,29 +183,48 @@ class MonetDB
   #
   # Returns an array of arrays with casted values.
   def select_rows(qry)
+    return if @connection.nil?
+    data = MonetDB::Data.new @connection
+
     start = Time.now
-    data = query(qry)
+    @connection.send(data.send(:format_query, qry))
+    result_set = @connection.receive.split("\n")
     log :info, "\n  [1m[35mSQL (#{((Time.now - start) * 1000).round(1)}ms)[0m  #{qry}[0m"
-    column_types = data.instance_variable_get(:@header)["columns_type"]
-    types = data.instance_variable_get(:@header)["columns_name"].collect{|x| column_types[x]}
-    data.fetch_all.collect do |array|
-      row = []
-      array.each_with_index do |value, index|
-        row << begin
-          unless value == "NULL"
-            case types[index]
-            when "bigint", "int"
-              value.to_i
-            when "double"
-              value.to_f
-            else
-              value.force_encoding("UTF-8")
+
+    if (row = result_set[0]).chr == MSG_INFO
+      raise QueryError, row
+    end
+
+    record_set = result_set.select{|x| [MSG_SCHEMA_HEADER, MSG_QUERY].include? x[0]}.compact
+    data.send :receive_record_set, record_set.join("\n")
+
+    if data.instance_variable_get(:@action) == Q_TABLE
+      header = data.send :parse_header_table, data.instance_variable_get(:@header)
+    end
+
+    column_types = header["columns_type"]
+    types = header["columns_name"].collect{|x| column_types[x]}
+
+    result_set.collect do |x|
+      if x[0] == MSG_TUPLE
+        row, values = [], x[1..-2].split(",\t")
+        values.each_with_index do |value, index|
+          row << begin
+            unless value.strip == "NULL"
+              case types[index]
+              when "bigint", "int"
+                value.to_i
+              when "double"
+                value.to_f
+              else
+                value.strip.gsub(/(^"|"$|\\|\")/, "").force_encoding("UTF-8")
+              end
             end
           end
         end
+        row
       end
-      row
-    end
+    end.compact
   end
 
   # Returns whether a "connection" object exists.
