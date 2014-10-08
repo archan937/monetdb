@@ -5,7 +5,7 @@ module Unit
 
     describe MonetDB do
       it "has the current version" do
-        version = File.read path("VERSION")
+        version = File.read(path("VERSION")).strip
         assert_equal version, MonetDB::VERSION
         assert File.read(path "CHANGELOG.rdoc").include?("Version #{version}")
       end
