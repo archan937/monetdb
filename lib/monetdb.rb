@@ -188,43 +188,49 @@ class MonetDB
 
     start = Time.now
     @connection.send(data.send(:format_query, qry))
-    result_set = @connection.receive.split("\n")
-    log :info, "\n  [1m[35mSQL (#{((Time.now - start) * 1000).round(1)}ms)[0m  #{qry}[0m"
+    response = @connection.receive.split("\n")
 
-    if (row = result_set[0]).chr == MSG_INFO
+    if (row = response[0]).chr == MSG_INFO
       raise QueryError, row
     end
 
-    record_set = result_set.select{|x| [MSG_SCHEMA_HEADER, MSG_QUERY].include? x[0]}.compact
-    data.send :receive_record_set, record_set.join("\n")
+    headers, rows = response.partition{|x| [MSG_SCHEMA_HEADER, MSG_QUERY].include? x[0]}
+    data.send :receive_record_set, headers.join("\n")
+    query_header = data.send :parse_header_query, headers.shift
+    table_header = data.send :parse_header_table, headers
+    rows = rows.join("\n")
 
-    if data.instance_variable_get(:@action) == Q_TABLE
-      header = data.send :parse_header_table, data.instance_variable_get(:@header)
+    row_count = rows.split("\t]\n").size
+    while row_count < query_header["rows"].to_i
+      received = @connection.receive
+      row_count += received.scan("\t]\n").size
+      rows << received
     end
+    rows = rows.split("\t]\n")
 
-    column_types = header["columns_type"]
-    types = header["columns_name"].collect{|x| column_types[x]}
+    log :info, "\n  [1m[35mSQL (#{((Time.now - start) * 1000).round(1)}ms)[0m  #{qry}[0m"
 
-    result_set.collect do |x|
-      if x[0] == MSG_TUPLE
-        row, values = [], x[1..-2].split(",\t")
-        values.each_with_index do |value, index|
-          row << begin
-            unless value.strip == "NULL"
-              case types[index]
-              when "bigint", "int"
-                value.to_i
-              when "double"
-                value.to_f
-              else
-                value.strip.gsub(/(^"|"$|\\|\")/, "").force_encoding("UTF-8")
-              end
+    column_types = table_header["columns_type"]
+    types = table_header["columns_name"].collect{|x| column_types[x]}
+
+    rows.collect do |row|
+      parsed, values = [], row.gsub(/^\[\s*/, "").split(",\t")
+      values.each_with_index do |value, index|
+        parsed << begin
+          unless value.strip == "NULL"
+            case types[index]
+            when "bigint", "int"
+              value.to_i
+            when "double"
+              value.to_f
+            else
+              value.strip.gsub(/(^"|"$|\\|\")/, "").force_encoding("UTF-8")
             end
           end
         end
-        row
       end
-    end.compact
+      parsed
+    end
   end
 
   # Returns whether a "connection" object exists.
