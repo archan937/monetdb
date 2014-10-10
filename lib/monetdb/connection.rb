@@ -78,31 +78,10 @@ module MonetDB
       set_reply_size
     end
 
-    def obtain_server_challenge
-      config[:salt], config[:server_name], config[:protocol], config[:auth_types], config[:server_endianness], config[:password_digest_method] = read.split(":")
-
-      unless PROTOCOLS.include?(config[:protocol])
-        raise MonetDB::ProtocolError, "Protocol '#{config[:protocol]}' not supported. Only #{PROTOCOLS.collect{|x| "'#{x}'"}.join(", ")}."
-      end
-
-      unless config[:auth_type] = (AUTH_TYPES & (auth_types = config[:auth_types].split(","))).first
-        raise MonetDB::AuthenticationError, "Authentication types (#{auth_types.join(", ")}) not supported. Only #{AUTH_TYPES.join(", ")}."
-      end
-    end
-
     def authenticate
-      obtain_server_challenge
+      obtain_server_challenge!
 
-      auth_string = begin
-        case config[:protocol]
-        when MAPI_V8
-          mapi_v8_auth_string
-        when MAPI_V9
-          mapi_v9_auth_string
-        end
-      end
-
-      write auth_string
+      write authentication_string
       response = read
 
       case msg_chr(response)
@@ -113,6 +92,49 @@ module MonetDB
       else
         true
       end
+    end
+
+    def obtain_server_challenge!
+      config.merge! server_challenge
+      assert_supported_protocol!
+      select_supported_auth_type!
+    end
+
+    def server_challenge
+      keys_and_values = [:salt, :server_name, :protocol, :auth_types, :server_endianness, :password_digest_method].zip read.split(":")
+      Hash[keys_and_values]
+    end
+
+    def assert_supported_protocol!
+      unless PROTOCOLS.include?(config[:protocol])
+        raise MonetDB::ProtocolError, "Protocol '#{config[:protocol]}' not supported. Only #{PROTOCOLS.collect{|x| "'#{x}'"}.join(", ")}."
+      end
+    end
+
+    def select_supported_auth_type!
+      unless config[:auth_type] = (AUTH_TYPES & (auth_types = config[:auth_types].split(","))).first
+        raise MonetDB::AuthenticationError, "Authentication types (#{auth_types.join(", ")}) not supported. Only #{AUTH_TYPES.join(", ")}."
+      end
+    end
+
+    def authentication_string
+      [ENDIANNESS, config[:username], "{#{config[:auth_type]}}#{authentication_hashsum}", LANG, config[:database], ""].join(":")
+    end
+
+    def authentication_hashsum
+      auth_type, password, password_digest_method = config.values_at(:auth_type, :password, :password_digest_method)
+
+      case auth_type
+      when AUTH_MD5, AUTH_SHA512, AUTH_SHA384, AUTH_SHA256, AUTH_SHA1
+        password = hexdigest(password_digest_method, password) if config[:protocol] == MAPI_V9
+        hexdigest(auth_type, password + config[:salt])
+      when AUTH_PLAIN
+        config[:password] + config[:salt]
+      end
+    end
+
+    def hexdigest(method, value)
+      Digest.const_get(method).new.hexdigest(value)
     end
 
     def authentication_redirect(response)
@@ -141,35 +163,6 @@ module MonetDB
       else
         raise MonetDB::AuthenticationError, "Cannot authenticate"
       end
-    end
-
-    def mapi_v8_auth_string
-      hashsum = begin
-        case (auth_type = config[:auth_type])
-        when AUTH_MD5, AUTH_SHA512, AUTH_SHA384, AUTH_SHA256, AUTH_SHA1
-          hexdigest(auth_type, config[:password] + config[:salt])
-        when AUTH_PLAIN
-          config[:password] + config[:salt]
-        end
-      end
-      [ENDIANNESS, config[:username], "{#{auth_type}}#{hashsum}", LANG, config[:database], ""].join(":")
-    end
-
-    def mapi_v9_auth_string
-      hashsum = begin
-        case (auth_type = config[:auth_type])
-        when AUTH_MD5, AUTH_SHA512, AUTH_SHA384, AUTH_SHA256, AUTH_SHA1
-          password_hexdigest = hexdigest(config[:password_digest_method], config[:password])
-          hexdigest(auth_type, password_hexdigest + config[:salt])
-        when AUTH_PLAIN
-          config[:password] + config[:salt]
-        end
-      end
-      [ENDIANNESS, config[:username], "{#{auth_type}}#{hashsum}", LANG, config[:database], ""].join(":")
-    end
-
-    def hexdigest(method, value)
-      Digest.const_get(method).new.hexdigest(value)
     end
 
     def set_timezone_interval
