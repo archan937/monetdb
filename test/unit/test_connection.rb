@@ -216,16 +216,16 @@ module Unit
       describe "#pack" do
         it "returns chunks provided with a length header" do
           message = "BIG:monetdb:{MD5}6432e841c9943d524b9b922ee1e5924a:sql:test_drive:"
-          assert_equal ["\x83\x00#{message}"], @connection.send(:pack, message)
+          assert_equal ["#{[131].pack("v")}#{message}"], @connection.send(:pack, message)
 
           message = "hKszBZEmQ1uOPYrpVFEc:merovingian:9:RIPEMD160,SHA256,SHA1,MD5:LIT:SHA512:"
-          assert_equal ["\x91\x00#{message}"], @connection.send(:pack, message)
+          assert_equal ["#{[145].pack("v")}#{message}"], @connection.send(:pack, message)
 
           message.expects(:scan).with(/.{1,#{MonetDB::Connection::MAX_MSG_SIZE}}/).returns(%w(foobar bazqux paul))
           assert_equal [
-            "\f\x00foobar",
-            "\f\x00bazqux",
-            "\t\x00paul"
+            "#{[12].pack("v")}foobar",
+            "#{[12].pack("v")}bazqux",
+            "#{[9].pack("v")}paul"
           ], @connection.send(:pack, message)
         end
       end

@@ -3,7 +3,7 @@
 require "bundler"
 Bundler.require :default, :development
 
-QUERY = "SELECT * FROM traffic_exports LIMIT 9000"
+QUERY = "SELECT * FROM stats LIMIT 9000"
 LOGIN = {
   "host" => "localhost",
   "port" => 50000,
