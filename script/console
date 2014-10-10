@@ -3,5 +3,20 @@
 require "bundler"
 Bundler.require :default, :development
 
+QUERY = "SELECT * FROM traffic_exports LIMIT 9000"
+LOGIN = {
+  "host" => "localhost",
+  "port" => 50000,
+  "database" => "zero_wing_development",
+  "username" => "monetdb",
+  "password" => "monetdb"
+}
+
+MonetDB.establish_connection LOGIN
+
+def select
+  MonetDB.connection.select_rows QUERY
+end
+
 puts "Loading MonetDB development environment (#{MonetDB::VERSION})"
 Pry.start
