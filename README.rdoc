@@ -1,4 +1,4 @@
-== MonetDB {<img src="https://secure.travis-ci.org/archan937/monetdb.png"/>}[http://travis-ci.org/archan937/monetdb] {<img src="https://codeclimate.com/github/archan937/monetdb.png"/>}[https://codeclimate.com/github/archan937/monetdb]
+== MonetDB {<img src="https://secure.travis-ci.org/archan937/monetdb.png"/>}[http://travis-ci.org/archan937/monetdb] {<img src="https://codeclimate.com/github/archan937/monetdb/badges/gpa.svg"/>}[https://codeclimate.com/github/archan937/monetdb]
 
 A pure Ruby database driver for MonetDB (monetdb5-sql).
 
