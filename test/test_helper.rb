@@ -1,5 +1,6 @@
 require_relative "test_helper/coverage"
 
+require "minitest"
 require "minitest/autorun"
 require "mocha/setup"
 
