@@ -46,6 +46,7 @@ module MonetDB
     end
 
     def connect
+      disconnect if connected?
       @socket = TCPSocket.new config[:host], config[:port].to_i
       setup
       true
@@ -71,6 +72,7 @@ module MonetDB
     end
 
     def setup
+      @authentication_redirects = 0
       authenticate
       set_timezone_interval
       set_reply_size
@@ -119,24 +121,20 @@ module MonetDB
       end
 
       begin
-        server_name, host, port, database = URI.split(uri = $1)
+        scheme, userinfo, host, port, registry, database = URI.split(uri = $1)
       rescue URI::InvalidURIError
         raise MonetDB::AuthenticationError, "Invalid authentication redirect URI: #{uri}"
       end
 
-      if server_name == "merovingian"
-        if (@authentication_redirects ||= 0) < 5
+      case scheme
+      when "merovingian"
+        if @authentication_redirects < 5
           @authentication_redirects += 1
           authenticate
         else
           raise MonetDB::AuthenticationError, "Merovingian: Too many redirects while proxying"
         end
-      elsif server_name == "monetdb"
-        begin
-          socket.close
-        rescue
-          raise MonetDB::AuthenticationError
-        end
+      when "monetdb"
         config[:host] = host
         config[:port] = port
         connect
@@ -177,7 +175,7 @@ module MonetDB
     def set_timezone_interval
       return false if @timezone_interval_set
 
-      offset = Time.new.gmt_offset / 3600
+      offset = Time.now.gmt_offset / 3600
       interval = "'+#{offset.to_s.rjust(2, "0")}:00'"
 
       write "sSET TIME ZONE INTERVAL #{interval} HOUR TO MINUTE;"
@@ -206,18 +204,20 @@ module MonetDB
 
     def write(message)
       raise ConnectionError, "Not connected to server" unless connected?
+      p message
       pack(message).each do |chunk|
         p chunk
         socket.write(chunk)
       end
+      true
     end
 
     def pack(message)
       chunks = message.scan(/.{1,#{MAX_MSG_SIZE}}/)
       chunks.each_with_index.to_a.collect do |chunk, index|
         last_bit = (index == chunks.size - 1) ? 1 : 0
-        header = [(chunk.size << 1) | last_bit].pack("v")
-        "#{header}#{chunk}"
+        length = [(chunk.size << 1) | last_bit].pack("v")
+        "#{length}#{chunk}"
       end.freeze
     end
 

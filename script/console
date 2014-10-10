@@ -7,7 +7,7 @@ QUERY = "SELECT * FROM traffic_exports LIMIT 9000"
 LOGIN = {
   "host" => "localhost",
   "port" => 50000,
-  "database" => "zero_wing_development",
+  "database" => "test_drive",
   "username" => "monetdb",
   "password" => "monetdb"
 }
