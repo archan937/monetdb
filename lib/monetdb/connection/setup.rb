@@ -1,6 +1,12 @@
 module MonetDB
   class Connection
-    module Authentication
+    module Setup
+
+      def setup
+        authenticate
+        set_timezone_interval
+        set_reply_size
+      end
 
       def authenticate
         obtain_server_challenge!
@@ -88,6 +94,29 @@ module MonetDB
         else
           raise MonetDB::AuthenticationError, "Cannot authenticate"
         end
+      end
+
+      def set_timezone_interval
+        return false if @timezone_interval_set
+
+        offset = Time.now.gmt_offset / 3600
+        interval = "'+#{offset.to_s.rjust(2, "0")}:00'"
+
+        write "sSET TIME ZONE INTERVAL #{interval} HOUR TO MINUTE;"
+        response = read
+
+        raise CommandError, "Unable to set timezone interval: #{response}" if msg?(response, MSG_ERROR)
+        @timezone_interval_set = true
+      end
+
+      def set_reply_size
+        return false if @reply_size_set
+
+        write "Xreply_size #{REPLY_SIZE}\n"
+        response = read
+
+        raise CommandError, "Unable to set reply size: #{response}" if msg?(response, MSG_ERROR)
+        @reply_size_set = true
       end
 
     end

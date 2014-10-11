@@ -1,9 +1,14 @@
 require "socket"
-require "monetdb/connection/authentication"
+require "monetdb/connection/message"
+require "monetdb/connection/setup"
+require "monetdb/connection/select"
 
 module MonetDB
   class Connection
-    include Authentication
+
+    include Message
+    include Setup
+    include Select
 
     Q_TABLE           = "1" # SELECT operation
     Q_UPDATE          = "2" # INSERT/UPDATE operations
@@ -73,33 +78,8 @@ module MonetDB
       @socket
     end
 
-    def setup
-      authenticate
-      set_timezone_interval
-      set_reply_size
-    end
-
-    def set_timezone_interval
-      return false if @timezone_interval_set
-
-      offset = Time.now.gmt_offset / 3600
-      interval = "'+#{offset.to_s.rjust(2, "0")}:00'"
-
-      write "sSET TIME ZONE INTERVAL #{interval} HOUR TO MINUTE;"
-      response = read
-
-      raise CommandError, "Unable to set timezone interval: #{response}" if msg?(response, MSG_ERROR)
-      @timezone_interval_set = true
-    end
-
-    def set_reply_size
-      return false if @reply_size_set
-
-      write "Xreply_size #{REPLY_SIZE}\n"
-      response = read
-
-      raise CommandError, "Unable to set reply size: #{response}" if msg?(response, MSG_ERROR)
-      @reply_size_set = true
+    def log(type, msg)
+      MonetDB.logger.send(type, msg) if MonetDB.logger
     end
 
     def read
@@ -133,18 +113,6 @@ module MonetDB
         length = [(chunk.size << 1) | last_bit].pack("v")
         "#{length}#{chunk}"
       end.freeze
-    end
-
-    def msg_chr(string)
-      string.empty? ? "" : string[0].chr
-    end
-
-    def msg?(string, msg)
-      msg_chr(string) == msg
-    end
-
-    def log(type, msg)
-      MonetDB.logger.send(type, msg) if MonetDB.logger
     end
 
   end

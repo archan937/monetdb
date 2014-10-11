@@ -86,83 +86,23 @@ module Unit
         end
       end
 
-      describe "#setup" do
-        it "obtains the server challenge, sets up the timezone and reply size" do
-          @connection.expects(:authenticate)
-          @connection.expects(:set_timezone_interval)
-          @connection.expects(:set_reply_size)
-          @connection.send(:setup)
-        end
-      end
-
-      describe "#set_timezone_interval" do
-        describe "when not already set" do
-          describe "when success" do
-            it "returns true" do
-              time = mock
-              time.expects(:gmt_offset).returns(7200)
-              Time.expects(:now).returns(time)
-
-              @connection.expects(:write).with("sSET TIME ZONE INTERVAL '+02:00' HOUR TO MINUTE;")
-              @connection.expects(:read).returns("")
-              assert_equal true, @connection.send(:set_timezone_interval)
-
-              @connection.instance_variable_set(:@timezone_interval_set, false)
-
-              time = mock
-              time.expects(:gmt_offset).returns(36000)
-              Time.expects(:now).returns(time)
-
-              @connection.expects(:write).with("sSET TIME ZONE INTERVAL '+10:00' HOUR TO MINUTE;")
-              @connection.expects(:read).returns("")
-              assert_equal true, @connection.send(:set_timezone_interval)
-            end
-          end
-
-          describe "when fail" do
-            it "raises a command error" do
-              @connection.expects(:write)
-              @connection.expects(:read).returns("!epicfail")
-              assert_raises MonetDB::CommandError do
-                @connection.send(:set_timezone_interval)
-              end
-            end
+      describe "#log" do
+        describe "without defined MonetDB.logger" do
+          it "does nothing" do
+            @connection.send(:log, :info, "This is a log line!")
           end
         end
 
-        describe "when already set" do
-          it "returns false" do
-            @connection.instance_variable_set(:@timezone_interval_set, true)
-            assert_equal false, @connection.send(:set_timezone_interval)
-          end
-        end
-      end
+        describe "with defined MonetDB.logger" do
+          it "delegates to MonetDB.logger" do
+            logger = mock
+            MonetDB.instance_variable_set :@logger, logger
 
-      describe "#set_reply_size" do
-        describe "when not already set" do
-          describe "when success" do
-            it "returns true" do
-              @connection.expects(:write).with("Xreply_size #{MonetDB::Connection::REPLY_SIZE}\n")
-              @connection.expects(:read).returns("")
-              assert_equal true, @connection.send(:set_reply_size)
-            end
-          end
+            logger.expects(:info).with("Testing!")
+            @connection.send(:log, :info, "Testing!")
 
-          describe "when fail" do
-            it "raises a command error" do
-              @connection.expects(:write)
-              @connection.expects(:read).returns("!epicfail")
-              assert_raises MonetDB::CommandError do
-                @connection.send(:set_reply_size)
-              end
-            end
-          end
-        end
-
-        describe "when already set" do
-          it "returns false" do
-            @connection.instance_variable_set(:@reply_size_set, true)
-            assert_equal false, @connection.send(:set_reply_size)
+            logger.expects(:error).with("Boom!")
+            @connection.send(:log, :error, "Boom!")
           end
         end
       end
@@ -221,62 +161,12 @@ module Unit
           message = "hKszBZEmQ1uOPYrpVFEc:merovingian:9:RIPEMD160,SHA256,SHA1,MD5:LIT:SHA512:"
           assert_equal ["#{[145].pack("v")}#{message}"], @connection.send(:pack, message)
 
-          message.expects(:scan).with(/.{1,#{MonetDB::Connection::MAX_MSG_SIZE}}/).returns(%w(foobar bazqux paul))
+          message.expects(:scan).with(/.{1,#{MonetDB::Connection::MAX_MSG_SIZE}}/m).returns(%w(foobar bazqux paul))
           assert_equal [
             "#{[12].pack("v")}foobar",
             "#{[12].pack("v")}bazqux",
             "#{[9].pack("v")}paul"
           ], @connection.send(:pack, message)
-        end
-      end
-
-      describe "#msg_chr" do
-        describe "when passing an empty string" do
-          it "returns an empty string" do
-            assert_equal "", @connection.send(:msg_chr, "")
-          end
-        end
-
-        describe "when passing a non-empty string" do
-          it "returns the first character" do
-            assert_equal " ", @connection.send(:msg_chr, "   ")
-            assert_equal "%", @connection.send(:msg_chr, "%foobar")
-          end
-        end
-      end
-
-      describe "#msg?" do
-        it "verifies whether the passed string matches the passed message character" do
-          assert_equal true , @connection.send(:msg?, "!syntax error", MonetDB::Connection::MSG_ERROR)
-          assert_equal false, @connection.send(:msg?, "!syntax error", MonetDB::Connection::MSG_PROMPT)
-
-          assert_equal true , @connection.send(:msg?, "", MonetDB::Connection::MSG_PROMPT)
-          assert_equal false, @connection.send(:msg?, "", MonetDB::Connection::MSG_ERROR)
-
-          @connection.expects(:msg_chr).with("foo").twice.returns("!")
-          assert_equal true , @connection.send(:msg?, "foo", MonetDB::Connection::MSG_ERROR)
-          assert_equal false, @connection.send(:msg?, "foo", MonetDB::Connection::MSG_PROMPT)
-        end
-      end
-
-      describe "#log" do
-        describe "without defined MonetDB.logger" do
-          it "does nothing" do
-            @connection.send(:log, :info, "This is a log line!")
-          end
-        end
-
-        describe "with defined MonetDB.logger" do
-          it "delegates to MonetDB.logger" do
-            logger = mock
-            MonetDB.instance_variable_set :@logger, logger
-
-            logger.expects(:info).with("Testing!")
-            @connection.send(:log, :info, "Testing!")
-
-            logger.expects(:error).with("Boom!")
-            @connection.send(:log, :error, "Boom!")
-          end
         end
       end
     end

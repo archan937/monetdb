@@ -2,27 +2,25 @@ require_relative "../../test_helper"
 
 module Unit
   module Connection
-    class TestAuthentication < MiniTest::Test
+    class TestSetup < MiniTest::Test
 
-      class SimpleConnection
-        include MonetDB::Connection::Authentication
-        attr_reader :config
-        def initialize
-          @config = {
-            :host => "localhost",
-            :port => 50000,
-            :username => "monetdb",
-            :password => "monetdb"
-          }
-        end
-        def msg_chr(string)
-          string.empty? ? "" : string[0].chr
-        end
+      class Connection < SimpleConnection
+        include MonetDB::Connection::Message
+        include MonetDB::Connection::Setup
       end
 
-      describe MonetDB::Connection::Authentication do
+      describe MonetDB::Connection::Setup do
         before do
-          @connection = SimpleConnection.new
+          @connection = Connection.new
+        end
+
+        describe "#setup" do
+          it "obtains the server challenge, sets up the timezone and reply size" do
+            @connection.expects(:authenticate)
+            @connection.expects(:set_timezone_interval)
+            @connection.expects(:set_reply_size)
+            @connection.send(:setup)
+          end
         end
 
         describe "#authenticate" do
@@ -284,6 +282,78 @@ module Unit
               assert_raises MonetDB::AuthenticationError do
                 @connection.send(:authentication_redirect, "^mapi:foobar")
               end
+            end
+          end
+        end
+
+        describe "#set_timezone_interval" do
+          describe "when not already set" do
+            describe "when success" do
+              it "returns true" do
+                time = mock
+                time.expects(:gmt_offset).returns(7200)
+                Time.expects(:now).returns(time)
+
+                @connection.expects(:write).with("sSET TIME ZONE INTERVAL '+02:00' HOUR TO MINUTE;")
+                @connection.expects(:read).returns("")
+                assert_equal true, @connection.send(:set_timezone_interval)
+
+                @connection.instance_variable_set(:@timezone_interval_set, false)
+
+                time = mock
+                time.expects(:gmt_offset).returns(36000)
+                Time.expects(:now).returns(time)
+
+                @connection.expects(:write).with("sSET TIME ZONE INTERVAL '+10:00' HOUR TO MINUTE;")
+                @connection.expects(:read).returns("")
+                assert_equal true, @connection.send(:set_timezone_interval)
+              end
+            end
+
+            describe "when fail" do
+              it "raises a command error" do
+                @connection.expects(:write)
+                @connection.expects(:read).returns("!epicfail")
+                assert_raises MonetDB::CommandError do
+                  @connection.send(:set_timezone_interval)
+                end
+              end
+            end
+          end
+
+          describe "when already set" do
+            it "returns false" do
+              @connection.instance_variable_set(:@timezone_interval_set, true)
+              assert_equal false, @connection.send(:set_timezone_interval)
+            end
+          end
+        end
+
+        describe "#set_reply_size" do
+          describe "when not already set" do
+            describe "when success" do
+              it "returns true" do
+                @connection.expects(:write).with("Xreply_size #{MonetDB::Connection::REPLY_SIZE}\n")
+                @connection.expects(:read).returns("")
+                assert_equal true, @connection.send(:set_reply_size)
+              end
+            end
+
+            describe "when fail" do
+              it "raises a command error" do
+                @connection.expects(:write)
+                @connection.expects(:read).returns("!epicfail")
+                assert_raises MonetDB::CommandError do
+                  @connection.send(:set_reply_size)
+                end
+              end
+            end
+          end
+
+          describe "when already set" do
+            it "returns false" do
+              @connection.instance_variable_set(:@reply_size_set, true)
+              assert_equal false, @connection.send(:set_reply_size)
             end
           end
         end
