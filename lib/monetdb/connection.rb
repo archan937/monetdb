@@ -104,9 +104,16 @@ module MonetDB
 
     def read
       raise ConnectionError, "Not connected to server" unless connected?
-      length = (socket.recv(2).unpack("v")[0] ^ 1) >> 1
-      p length
-      length == 0 ? "" : socket.recv(length).tap{|message| p message}
+
+      bytes = socket.recv(2).unpack("v")[0]
+      last_chunk = (bytes & 1) == 1
+      length = bytes >> 1
+      puts "last_chunk: #{last_chunk}, length: #{length}"
+
+      ((length > 0) ? socket.recv(length) : "").tap do |data|
+        p data
+        data << read unless last_chunk
+      end
     end
 
     def write(message)
