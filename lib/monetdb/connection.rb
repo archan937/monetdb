@@ -82,20 +82,29 @@ module MonetDB
       MonetDB.logger.send(type, msg) if MonetDB.logger
     end
 
-    def read(include_header = false)
+    def read
       raise ConnectionError, "Not connected to server" unless connected?
 
-      received   = socket.recv(2)
-      bytes      = received.unpack("v")[0]
-      last_chunk = (bytes & 1) == 1
-      length     = (bytes >> 1)
+      length, last_chunk = read_length
       puts "last_chunk: #{last_chunk}, length: #{length}"
 
-      ((length > 0) ? socket.recv(length) : "").tap do |data|
-        data.insert(0, received) if include_header
-        p data
-        data.insert(-1, read(true)) unless last_chunk
+      data, iterations = "", 0
+
+      while (length > 0) && (iterations < 1000) do
+        received = socket.recv(length)
+        data << received
+        length -= received.bytes.size
+        iterations += 1
       end
+      p data
+      data << read unless last_chunk
+
+      data
+    end
+
+    def read_length
+      bytes = socket.recv(2).unpack("v")[0]
+      [(bytes >> 1), (bytes & 1) == 1]
     end
 
     def write(message)

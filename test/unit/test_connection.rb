@@ -121,11 +121,14 @@ module Unit
             socket = mock
             @connection.instance_variable_set(:@socket, socket)
 
-            response = mock
-            socket.expects(:recv).with(2).returns("\x85\x00")
-            socket.expects(:recv).with(66).returns(response)
+            first_chunk = " " * 44
+            last_chunk = " " * 22
 
-            assert_equal response, @connection.send(:read)
+            socket.expects(:recv).with(2).returns("\x85\x00")
+            socket.expects(:recv).with(66).returns(first_chunk)
+            socket.expects(:recv).with(22).returns(last_chunk)
+
+            assert_equal first_chunk + last_chunk, @connection.send(:read)
           end
         end
       end
