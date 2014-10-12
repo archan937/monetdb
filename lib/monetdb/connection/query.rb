@@ -68,7 +68,7 @@ module MonetDB
       def to_scheme_header_hash(header)
         table_name = header[0][0]
         column_names = header[1]
-        column_types = Hash[column_names.zip(header[2].collect(&:to_sym))]
+        column_types = header[2].collect(&:to_sym)
         column_lengths = header[3].collect(&:to_i)
 
         {:table_name => table_name, :column_names => column_names, :column_types => column_types, :column_lengths => column_lengths}.freeze
@@ -76,12 +76,10 @@ module MonetDB
 
       def parse_rows(table_header, response)
         column_types = table_header[:column_types]
-        types = table_header[:column_names].collect{|x| column_types[x]}
-
         response.split("\t]\n").collect do |row|
           parsed, values = [], row.slice(1..-1).split(",\t")
           values.each_with_index do |value, index|
-            parsed << parse_value(types[index], value)
+            parsed << parse_value(column_types[index], value.strip)
           end
           parsed
         end
