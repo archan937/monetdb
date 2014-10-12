@@ -76,7 +76,7 @@ module MonetDB
 
       def parse_rows(table_header, response)
         column_types = table_header[:column_types]
-        response.split("\t]\n").collect do |row|
+        response.slice(0..-3).split("\t]\n").collect do |row|
           parsed, values = [], row.slice(1..-1).split(",\t")
           values.each_with_index do |value, index|
             parsed << parse_value(column_types[index], value.strip)
@@ -101,7 +101,7 @@ module MonetDB
           when :tinyint
             parse_boolean_value value
           else
-            raise NotImplementedError, "Cannot parse value of type #{type}"
+            raise NotImplementedError, "Cannot parse value of type #{type.inspect}"
           end
         end
       end

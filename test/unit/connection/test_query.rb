@@ -14,6 +14,80 @@ module Unit
           @connection = Connection.new
         end
 
+        describe "#query" do
+          describe "when disconnected" do
+            it "raises a connection error" do
+              assert_raises MonetDB::ConnectionError do
+                @connection.query("")
+              end
+            end
+          end
+
+          describe "when connected" do
+            before do
+              @connection.instance_variable_set(:@socket, mock)
+            end
+
+            describe "when doing a select query" do
+              describe "when returning the correct amount of records" do
+                it "returns the result set" do
+                  query = "SELECT * FROM foo_bars"
+                  response = <<-RESPONSE
+&1 0 2 2 2
+% sys.foo_bars,\tsys.foo_bars # table_name
+% id,\tname # name
+% int,\tvarchar # type
+% 2,\t17 # length
+[ 1,\t"Paul Engel"\t]
+[ 2,\t"Ken Adams"\t]
+                  RESPONSE
+
+                  @connection.expects(:write).with("s#{query};")
+                  @connection.expects(:read).returns(response.strip)
+
+                  assert_equal [
+                    [1, "Paul Engel"],
+                    [2, "Ken Adams"]
+                  ], @connection.query(query)
+                end
+              end
+
+              describe "when not returning the correct amount of records" do
+                it "raises a query error" do
+                  query = "SELECT * FROM foo_bars"
+                  response = <<-RESPONSE
+&1 0 3 2 2
+% sys.foo_bars,\tsys.foo_bars # table_name
+% id,\tname # name
+% int,\tvarchar # type
+% 2,\t17 # length
+[ 1,\t"Paul Engel"\t]
+[ 2,\t"Ken Adams"\t]
+                  RESPONSE
+
+                  @connection.expects(:write).with("s#{query};")
+                  @connection.expects(:read).returns(response.strip)
+
+                  assert_raises MonetDB::QueryError do
+                    @connection.query(query)
+                  end
+                end
+              end
+            end
+
+            describe "when doing another query" do
+              it "returns true" do
+                query = "UPDATE foo_bars SET updated_at = NOW()"
+
+                @connection.expects(:write).with("s#{query};")
+                @connection.expects(:read).returns("&2 23 -1")
+
+                assert_equal true, @connection.query(query)
+              end
+            end
+          end
+        end
+
         describe "#extract_headers!" do
           it "returns an array with delegated return values" do
             response, foo, bar = mock, mock, mock
