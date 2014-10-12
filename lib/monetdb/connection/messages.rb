@@ -1,6 +1,6 @@
 module MonetDB
   class Connection
-    module Message
+    module Messages
 
       def msg_chr(string)
         string.empty? ? "" : string[0].chr

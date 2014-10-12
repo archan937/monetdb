@@ -2,11 +2,11 @@ require_relative "../../test_helper"
 
 module Unit
   module Connection
-    class TestSelect < MiniTest::Test
+    class TestQuery < MiniTest::Test
 
       class Connection < SimpleConnection
-        include MonetDB::Connection::Message
-        include MonetDB::Connection::Select
+        include MonetDB::Connection::Messages
+        include MonetDB::Connection::Query
       end
 
     end

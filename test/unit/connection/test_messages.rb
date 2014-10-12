@@ -5,10 +5,10 @@ module Unit
     class TestSetup < MiniTest::Test
 
       class Connection < SimpleConnection
-        include MonetDB::Connection::Message
+        include MonetDB::Connection::Messages
       end
 
-      describe MonetDB::Connection::Message do
+      describe MonetDB::Connection::Messages do
         before do
           @connection = Connection.new
         end

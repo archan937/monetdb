@@ -1,45 +1,45 @@
 require "socket"
-require "monetdb/connection/message"
+require "monetdb/connection/messages"
 require "monetdb/connection/setup"
-require "monetdb/connection/select"
+require "monetdb/connection/query"
 
 module MonetDB
   class Connection
 
-    include Message
+    include Messages
     include Setup
-    include Select
+    include Query
 
-    Q_TABLE           = "1" # SELECT operation
-    Q_UPDATE          = "2" # INSERT/UPDATE operations
-    Q_CREATE          = "3" # CREATE/DROP TABLE operations
-    Q_TRANSACTION     = "4" # TRANSACTION
-    Q_PREPARE         = "5" # QPREPARE message
-    Q_BLOCK           = "6" # QBLOCK message
+    Q_TABLE        = "1" # SELECT statement
+    Q_UPDATE       = "2" # INSERT/UPDATE statement
+    Q_CREATE       = "3" # CREATE/DROP TABLE statement
+    Q_TRANSACTION  = "4" # TRANSACTION
+    Q_PREPARE      = "5" # QPREPARE message
+    Q_BLOCK        = "6" # QBLOCK message
 
-    MSG_REDIRECT      = "^" # Authentication redirect
-    MSG_QUERY         = "&"
-    MSG_SCHEMA_HEADER = "%"
-    MSG_ERROR         = "!"
-    MSG_TUPLE         = "["
-    MSG_PROMPT        = ""
+    MSG_PROMPT     = ""
+    MSG_ERROR      = "!"
+    MSG_REDIRECT   = "^"
+    MSG_QUERY      = "&"
+    MSG_SCHEME     = "%"
+    MSG_TUPLE      = "["
 
-    MAX_MSG_SIZE      = 32766
-    REPLY_SIZE        = "-1"
-    ENDIANNESS        = "BIG"
-    LANG              = "sql"
+    ENDIANNESS     = "BIG"
+    LANG           = "sql"
+    REPLY_SIZE     = "-1"
+    MAX_MSG_SIZE   = 32766
 
-    MAPI_V8           = "8"
-    MAPI_V9           = "9"
-    PROTOCOLS         = [MAPI_V8, MAPI_V9]
+    MAPI_V8        = "8"
+    MAPI_V9        = "9"
+    PROTOCOLS      = [MAPI_V8, MAPI_V9]
 
-    AUTH_MD5          = "MD5"
-    AUTH_SHA512       = "SHA512"
-    AUTH_SHA384       = "SHA384"
-    AUTH_SHA256       = "SHA256"
-    AUTH_SHA1         = "SHA1"
-    AUTH_PLAIN        = "PLAIN"
-    AUTH_TYPES        = [AUTH_MD5, AUTH_SHA512, AUTH_SHA384, AUTH_SHA256, AUTH_SHA1, AUTH_PLAIN]
+    AUTH_MD5       = "MD5"
+    AUTH_SHA512    = "SHA512"
+    AUTH_SHA384    = "SHA384"
+    AUTH_SHA256    = "SHA256"
+    AUTH_SHA1      = "SHA1"
+    AUTH_PLAIN     = "PLAIN"
+    AUTH_TYPES     = [AUTH_MD5, AUTH_SHA512, AUTH_SHA384, AUTH_SHA256, AUTH_SHA1, AUTH_PLAIN]
 
     def initialize(config = {})
       @config = {
@@ -86,17 +86,14 @@ module MonetDB
       raise ConnectionError, "Not connected to server" unless connected?
 
       length, last_chunk = read_length
-      puts "last_chunk: #{last_chunk}, length: #{length}"
-
       data, iterations = "", 0
 
       while (length > 0) && (iterations < 1000) do
         received = socket.recv(length)
         data << received
-        length -= received.bytes.size
+        length -= received.bytesize
         iterations += 1
       end
-      p data
       data << read unless last_chunk
 
       data
@@ -109,9 +106,7 @@ module MonetDB
 
     def write(message)
       raise ConnectionError, "Not connected to server" unless connected?
-      p message
       pack(message).each do |chunk|
-        p chunk
         socket.write(chunk)
       end
       true

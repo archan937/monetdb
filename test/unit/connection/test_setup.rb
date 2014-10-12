@@ -5,7 +5,7 @@ module Unit
     class TestSetup < MiniTest::Test
 
       class Connection < SimpleConnection
-        include MonetDB::Connection::Message
+        include MonetDB::Connection::Messages
         include MonetDB::Connection::Setup
       end
 
