@@ -4,7 +4,6 @@ module MonetDB
 
       def query(statement)
         raise ConnectionError, "Not connected to server" unless connected?
-        start = Time.now
 
         write "s#{statement};"
         response = read.split("\n")
@@ -20,7 +19,6 @@ module MonetDB
           response = true
         end
 
-        puts "#{Time.now - start}s"
         response
       end
 
@@ -71,7 +69,7 @@ module MonetDB
         types = table_header[:column_names].collect{|x| column_types[x]}
 
         response.split("\t]\n").collect do |row|
-          parsed, values = [], row.gsub(/^\[\s*/, "").split(",\t")
+          parsed, values = [], row.slice(1..-1).split(",\t")
           values.each_with_index do |value, index|
             parsed << parse_value(types[index], value)
           end
@@ -82,16 +80,17 @@ module MonetDB
       def parse_value(type, value)
         unless value == "NULL"
           case type
+          when :varchar, :text
+            value.slice(1..-2).force_encoding("UTF-8")
           when :int, :smallint, :bigint
             value.to_i
           when :double, :float, :real
             value.to_f
           when :date
-            Date.parse(value)
+            Date.new *value.split("-").collect(&:to_i)
           when :timestamp
-            Time.parse(value)
-          when :varchar, :text
-            value.gsub(/(^"|"$|\\|\")/, "").force_encoding("UTF-8")
+            date, time = value.split(" ")
+            Time.new *(date.split("-") + time.split(":")).collect(&:to_i)
           when :tinyint
             value == "1"
           else
