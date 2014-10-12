@@ -3,19 +3,19 @@
 require "bundler"
 Bundler.require :default, :development
 
-QUERY = "SELECT * FROM stats LIMIT 9000"
+QUERY = "SELECT * FROM stats LIMIT 2000"
 LOGIN = {
   "host" => "localhost",
   "port" => 50000,
-  "database" => "test_drive",
+  "database" => "my_monetdb",
   "username" => "monetdb",
   "password" => "monetdb"
 }
 
 MonetDB.establish_connection LOGIN
 
-def select
-  MonetDB.connection.select_rows QUERY
+def query
+  MonetDB.connection.query QUERY
 end
 
 puts "Loading MonetDB development environment (#{MonetDB::VERSION})"
