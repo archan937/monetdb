@@ -10,4 +10,14 @@ class SimpleConnection
     }
   end
 
+  def connected?
+    !@socket.nil?
+  end
+
+private
+
+  def socket
+    @socket
+  end
+
 end
