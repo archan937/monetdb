@@ -1,5 +1,10 @@
 = MonetDB CHANGELOG
 
+== Version 0.2.1 (October 13, 2014)
+
+* Extracted IO related methods to MonetDB::Connection::IO
+* Fixed bug when parsing rows (excluding "\t]" at end of string)
+
 == Version 0.2.0 (October 13, 2014)
 
 * Complete rewrite of the gem (only focussed on querying data using SQL)
