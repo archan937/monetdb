@@ -1,6 +1,7 @@
 module MonetDB
   class Connection
     module Setup
+    private
 
       def setup
         authenticate

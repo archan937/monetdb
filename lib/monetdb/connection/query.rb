@@ -24,6 +24,8 @@ module MonetDB
 
       alias :select_rows :query
 
+    private
+
       def extract_headers!(response)
         [parse_query_header!(response), parse_scheme_header!(response)]
       end
@@ -37,7 +39,12 @@ module MonetDB
           raise QueryError, "Expected an query header (#{MSG_QUERY}) but got (#{header[0].chr})"
         end
 
+        to_query_header_hash header
+      end
+
+      def to_query_header_hash(header)
         hash = {:type => header[1].chr}
+
         keys = {
           Q_TABLE => [:id, :rows, :columns, :returned],
           Q_BLOCK => [:id, :columns, :remains, :offset]
@@ -54,14 +61,17 @@ module MonetDB
       def parse_scheme_header!(response)
         if (count = response.take_while{|x| x[0].chr == MSG_SCHEME}.size) > 0
           header = response.shift(count).collect{|x| x.gsub(/(^#{MSG_SCHEME}\s+|\s+#[^#]+$)/, "").split(/,?\s+/)}
-
-          table_name = header[0][0]
-          column_names = header[1]
-          column_types = Hash[column_names.zip(header[2].collect(&:to_sym))]
-          column_lengths = header[3].collect(&:to_i)
-
-          {:table_name => table_name, :column_names => column_names, :column_types => column_types, :column_lengths => column_lengths}.freeze
+          to_scheme_header_hash header
         end
+      end
+
+      def to_scheme_header_hash(header)
+        table_name = header[0][0]
+        column_names = header[1]
+        column_types = Hash[column_names.zip(header[2].collect(&:to_sym))]
+        column_lengths = header[3].collect(&:to_i)
+
+        {:table_name => table_name, :column_names => column_names, :column_types => column_types, :column_lengths => column_lengths}.freeze
       end
 
       def parse_rows(table_header, response)
@@ -81,22 +91,46 @@ module MonetDB
         unless value == "NULL"
           case type
           when :varchar, :text
-            value.slice(1..-2).force_encoding("UTF-8")
+            parse_string_value value
           when :int, :smallint, :bigint
-            value.to_i
+            parse_integer_value value
           when :double, :float, :real
-            value.to_f
+            parse_float_value value
           when :date
-            Date.new *value.split("-").collect(&:to_i)
+            parse_date_value value
           when :timestamp
-            date, time = value.split(" ")
-            Time.new *(date.split("-") + time.split(":")).collect(&:to_i)
+            parse_date_time_value value
           when :tinyint
-            value == "1"
+            parse_boolean_value value
           else
             raise NotImplementedError, "Cannot parse value of type #{type}"
           end
         end
+      end
+
+      def parse_string_value(value)
+        value.slice(1..-2).force_encoding("UTF-8")
+      end
+
+      def parse_integer_value(value)
+        value.to_i
+      end
+
+      def parse_float_value(value)
+        value.to_f
+      end
+
+      def parse_date_value(value)
+        Date.new *value.split("-").collect(&:to_i)
+      end
+
+      def parse_date_time_value(value)
+        date, time = value.split(" ")
+        Time.new *(date.split("-") + time.split(":")).collect(&:to_i)
+      end
+
+      def parse_boolean_value(value)
+        value == "1"
       end
 
     end
