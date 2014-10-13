@@ -1,5 +1,11 @@
 = MonetDB CHANGELOG
 
+== Version 0.2.2 (October 13, 2014)
+
+* Added MonetDB::Connection#select_values
+* Added MonetDB::Connection#select_value
+* Changed license to MIT License
+
 == Version 0.2.1 (October 13, 2014)
 
 * Extracted IO related methods to MonetDB::Connection::IO
