@@ -24,6 +24,15 @@ module MonetDB
 
       alias :select_rows :query
 
+      def select_values(query)
+        select_rows(query).collect{|x| x[0]}
+      end
+
+      def select_value(query)
+        row = select_rows(query)[0]
+        row[0] if row
+      end
+
     private
 
       def extract_headers!(response)

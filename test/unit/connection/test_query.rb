@@ -75,7 +75,7 @@ module Unit
               end
             end
 
-            describe "when doing another query" do
+            describe "when doing any another type of query" do
               it "returns true" do
                 query = "UPDATE foo_bars SET updated_at = NOW()"
 
@@ -84,6 +84,42 @@ module Unit
 
                 assert_equal true, @connection.query(query)
               end
+            end
+          end
+        end
+
+        describe "#select_values" do
+          before do
+            @query = "SELECT id FROM relations ORDER BY id LIMIT 4"
+          end
+          describe "when empty result set" do
+            it "returns an empty array" do
+              @connection.expects(:select_rows).with(@query).returns([])
+              assert_equal [], @connection.select_values(@query)
+            end
+          end
+          describe "when getting data" do
+            it "returns every first value of every row" do
+              @connection.expects(:select_rows).with(@query).returns([[1934], [1947], [1980], [1982]])
+              assert_equal [1934, 1947, 1980, 1982], @connection.select_values(@query)
+            end
+          end
+        end
+
+        describe "#select_value" do
+          before do
+            @query = "SELECT id FROM relations ORDER BY id LIMIT 1"
+          end
+          describe "when empty result set" do
+            it "returns nil" do
+              @connection.expects(:select_rows).with(@query).returns([])
+              assert_nil @connection.select_value(@query)
+            end
+          end
+          describe "when getting data" do
+            it "returns the first value of the first row" do
+              @connection.expects(:select_rows).with(@query).returns([[1982]])
+              assert_equal 1982, @connection.select_value(@query)
             end
           end
         end
