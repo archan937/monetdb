@@ -16,7 +16,7 @@ Run the following in your console to install with Bundler:
 
 === License
 
-Copyright (c) 2014 Paul Engel, released under the MonetDB Public License v1.1
+Copyright (c) 2014 Paul Engel, released under the MIT License
 
 http://gettopup.com – http://github.com/archan937 – http://twitter.com/archan937 – {pm_engel@icloud.com}[mailto:pm_engel@icloud.com]
 
