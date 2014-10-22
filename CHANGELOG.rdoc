@@ -1,5 +1,11 @@
 = MonetDB CHANGELOG
 
+== Version 0.2.3 (October 22, 2014)
+
+* Dropped activesupport dependency
+* Extracted logging related method to MonetDB::Connection::Logger
+* Logging query info
+
 == Version 0.2.2 (October 13, 2014)
 
 * Added MonetDB::Connection#select_values
