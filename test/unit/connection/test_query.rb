@@ -7,6 +7,7 @@ module Unit
       class Connection < SimpleConnection
         include MonetDB::Connection::Messages
         include MonetDB::Connection::Query
+        include MonetDB::Connection::Logger
       end
 
       describe MonetDB::Connection::Query do
@@ -263,19 +264,23 @@ module Unit
 
         describe "#parse_rows" do
           it "returns an array of hashes" do
+            query_header = {
+              :rows => 2
+            }
+
             table_header = {
               :column_types => [:varchar, :date, :double]
             }
 
             response = [
-              "[ \"Paul Engel\",\t1982-08-01,\t19.82\t]",
-              "[ \"Ken Adams\",\t1980-10-13,\t20.47\t]"
+              "[ \"Paul Engel\",\t1982-08-01,\t1709.34\t]",
+              "[ \"Ken Adams\",\t1980-10-31,\t2003.47\t]"
             ].join("\n")
 
             assert_equal [
-              ["Paul Engel", Date.parse("1982-08-01"), 19.82],
-              ["Ken Adams", Date.parse("1980-10-13"), 20.47]
-            ], @connection.send(:parse_rows, table_header, response)
+              ["Paul Engel", Date.parse("1982-08-01"), 1709.34],
+              ["Ken Adams", Date.parse("1980-10-31"), 2003.47]
+            ], @connection.send(:parse_rows, query_header, table_header, response)
           end
         end
 

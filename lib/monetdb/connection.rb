@@ -3,6 +3,7 @@ require "monetdb/connection/io"
 require "monetdb/connection/messages"
 require "monetdb/connection/setup"
 require "monetdb/connection/query"
+require "monetdb/connection/logger"
 
 module MonetDB
   class Connection
@@ -11,6 +12,7 @@ module MonetDB
     include Messages
     include Setup
     include Query
+    include Logger
 
     Q_TABLE        = "1" # SELECT statement
     Q_UPDATE       = "2" # INSERT/UPDATE statement
@@ -78,10 +80,6 @@ module MonetDB
 
     def socket
       @socket
-    end
-
-    def log(type, msg)
-      MonetDB.logger.send(type, msg) if MonetDB.logger
     end
 
   end

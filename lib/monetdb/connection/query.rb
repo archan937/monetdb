@@ -5,8 +5,12 @@ module MonetDB
       def query(statement)
         raise ConnectionError, "Not connected to server" unless connected?
 
+        start = Time.now
+
         write "s#{statement};"
         response = read.split("\n")
+
+        log :info, "\n  [1m[35mSQL (#{((Time.now - start) * 1000).round(1)}ms)[0m  #{statement}[0m"
 
         query_header, table_header = extract_headers!(response)
 
@@ -14,7 +18,7 @@ module MonetDB
           unless query_header[:rows] == response.size
             raise QueryError, "Amount of fetched rows does not match header value (#{response.size} instead of #{query_header[:rows]})"
           end
-          response = parse_rows(table_header, response.join("\n"))
+          response = parse_rows(query_header, table_header, response.join("\n"))
         else
           response = true
         end
@@ -83,14 +87,18 @@ module MonetDB
         {:table_name => table_name, :column_names => column_names, :column_types => column_types, :column_lengths => column_lengths}.freeze
       end
 
-      def parse_rows(table_header, response)
+      def parse_rows(query_header, table_header, response)
+        start = Time.now
         column_types = table_header[:column_types]
+
         response.slice(0..-3).split("\t]\n").collect do |row|
           parsed, values = [], row.slice(1..-1).split(",\t")
           values.each_with_index do |value, index|
             parsed << parse_value(column_types[index], value.strip)
           end
           parsed
+        end.tap do
+          log :info, "  [1m[36mRUBY (#{((Time.now - start) * 1000).round(1)}ms)[0m [ Rows: #{query_header[:rows]}, Bytesize: #{response.bytesize} bytes ][0m"
         end
       end
 
