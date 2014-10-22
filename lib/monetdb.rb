@@ -1,5 +1,3 @@
-require "active_support/core_ext/hash/reverse_merge"
-
 require "monetdb/connection"
 require "monetdb/error"
 require "monetdb/version"
