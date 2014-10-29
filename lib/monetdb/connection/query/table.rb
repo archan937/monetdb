@@ -5,7 +5,6 @@ module MonetDB
 
         def parse_table_response(query_header, table_header, response)
           unless query_header[:rows] == response.size
-            disconnect if reconnect?
             raise QueryError, "Amount of fetched rows does not match header value (#{response.size} instead of #{query_header[:rows]})"
           end
           parse_table_rows query_header, table_header, response.join("\n")

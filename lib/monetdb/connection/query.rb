@@ -54,6 +54,7 @@ module MonetDB
 
         unless header[0].chr == MSG_QUERY
           ENV["MONETDB_QUERY_RESPONSE"] = ([header] + response).join("\n").inspect
+          disconnect if reconnect?
           raise QueryError, "Expected an query header (#{MSG_QUERY}) but got (#{header[0].chr})"
         end
 
