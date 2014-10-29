@@ -30,16 +30,19 @@ module MonetDB
 
       def parse_response(response)
         query_header, table_header = extract_headers!(response)
-
         if query_header[:type] == Q_TABLE
-          unless query_header[:rows] == response.size
-            disconnect if reconnect?
-            raise QueryError, "Amount of fetched rows does not match header value (#{response.size} instead of #{query_header[:rows]})"
-          end
-          parse_rows query_header, table_header, response.join("\n")
+          parse_table_response query_header, table_header, response
         else
           true
         end
+      end
+
+      def parse_table_response(query_header, table_header, response)
+        unless query_header[:rows] == response.size
+          disconnect if reconnect?
+          raise QueryError, "Amount of fetched rows does not match header value (#{response.size} instead of #{query_header[:rows]})"
+        end
+        parse_table_rows query_header, table_header, response.join("\n")
       end
 
       def extract_headers!(response)
@@ -91,18 +94,26 @@ module MonetDB
         {:table_name => table_name, :column_names => column_names, :column_types => column_types, :column_lengths => column_lengths}.freeze
       end
 
-      def parse_rows(query_header, table_header, response)
+      def parse_table_rows(query_header, table_header, response)
         start = Time.now
-        column_types = table_header[:column_types]
+        rows = response.slice(0..-3).split("\t]\n")
+        parse_rows(table_header, rows).tap do
+          log :info, "  [1m[36mRUBY (#{((Time.now - start) * 1000).round(1)}ms)[0m [ Rows: #{query_header[:rows]}, Bytesize: #{response.bytesize} bytes ][0m"
+        end
+      end
 
-        response.slice(0..-3).split("\t]\n").collect do |row|
-          parsed, values = [], row.slice(1..-1).split(",\t")
-          values.each_with_index do |value, index|
+      def parse_rows(table_header, rows)
+        column_types = table_header[:column_types]
+        rows.collect do |row|
+          parse_row column_types, row
+        end
+      end
+
+      def parse_row(column_types, row)
+        [].tap do |parsed|
+          row.slice(1..-1).split(",\t").each_with_index do |value, index|
             parsed << parse_value(column_types[index], value.strip)
           end
-          parsed
-        end.tap do
-          log :info, "  [1m[36mRUBY (#{((Time.now - start) * 1000).round(1)}ms)[0m [ Rows: #{query_header[:rows]}, Bytesize: #{response.bytesize} bytes ][0m"
         end
       end
 

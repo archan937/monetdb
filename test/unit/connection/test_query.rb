@@ -280,7 +280,7 @@ module Unit
             assert_equal [
               ["Paul Engel", Date.parse("1982-08-01"), 1709.34],
               ["Ken Adams", Date.parse("1980-10-31"), 2003.47]
-            ], @connection.send(:parse_rows, query_header, table_header, response)
+            ], @connection.send(:parse_table_rows, query_header, table_header, response)
           end
         end
 
