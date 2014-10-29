@@ -1,5 +1,9 @@
 = MonetDB CHANGELOG
 
+== Version 0.2.5 (October 29, 2014)
+
+* Corrected disconnecting after getting invalid query header error
+
 == Version 0.2.4 (October 29, 2014)
 
 * Being able to reconnect after getting invalid query header error
