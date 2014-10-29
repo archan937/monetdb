@@ -45,16 +45,6 @@ module Unit
         end
       end
 
-      describe "#connected?" do
-        it "returns whether it has an active socket" do
-          assert_equal false, @connection.connected?
-          @connection.instance_variable_set :@socket, mock
-          assert_equal true, @connection.connected?
-          @connection.instance_variable_set :@socket, nil
-          assert_equal false, @connection.connected?
-        end
-      end
-
       describe "#disconnect" do
         describe "when disconnected" do
           it "does nothing" do
@@ -75,6 +65,71 @@ module Unit
 
             assert_equal nil, @connection.instance_variable_get(:@socket)
             assert_equal false, @connection.connected?
+          end
+        end
+      end
+
+      describe "#connected?" do
+        it "returns whether it has an active socket" do
+          assert_equal false, @connection.connected?
+          @connection.instance_variable_set :@socket, mock
+          assert_equal true, @connection.connected?
+          @connection.instance_variable_set :@socket, nil
+          assert_equal false, @connection.connected?
+        end
+      end
+
+      describe "#reconnect?" do
+        describe "at default" do
+          it "returns false" do
+            assert_equal false, @connection.reconnect?
+          end
+        end
+
+        describe "when configured to true" do
+          it "returns true" do
+            @connection.instance_variable_get(:@config)[:reconnect] = true
+            assert_equal true, @connection.reconnect?
+          end
+        end
+      end
+
+      describe "#check_connectivity!" do
+        describe "when configured reconnect: true" do
+          before do
+            @connection.expects(:reconnect?).returns(true)
+          end
+
+          describe "when disconnected" do
+            it "connects" do
+              @connection.expects(:connected?).returns(false)
+              @connection.expects(:connect)
+              @connection.check_connectivity!
+            end
+          end
+
+          describe "when connected" do
+            it "does nothing" do
+              @connection.expects(:connected?).returns(true)
+              @connection.expects(:connect).never
+              @connection.check_connectivity!
+            end
+          end
+        end
+
+        describe "when not configured reconnect: true" do
+          describe "when disconnected" do
+            it "does nothing" do
+              @connection.expects(:connect).never
+              @connection.check_connectivity!
+            end
+          end
+
+          describe "when connected" do
+            it "does nothing" do
+              @connection.expects(:connect).never
+              @connection.check_connectivity!
+            end
           end
         end
       end

@@ -63,13 +63,21 @@ module MonetDB
       true
     end
 
+    def disconnect
+      socket.disconnect if connected?
+      @socket = nil
+    end
+
     def connected?
       !socket.nil?
     end
 
-    def disconnect
-      socket.disconnect if connected?
-      @socket = nil
+    def reconnect?
+      !!config[:reconnect]
+    end
+
+    def check_connectivity!
+      connect if reconnect? && !connected?
     end
 
   private

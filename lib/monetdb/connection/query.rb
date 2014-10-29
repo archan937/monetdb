@@ -3,6 +3,7 @@ module MonetDB
     module Query
 
       def query(statement)
+        check_connectivity!
         raise ConnectionError, "Not connected to server" unless connected?
 
         start = Time.now
@@ -11,19 +12,7 @@ module MonetDB
         response = read.split("\n")
 
         log :info, "\n  [1m[35mSQL (#{((Time.now - start) * 1000).round(1)}ms)[0m  #{statement}[0m"
-
-        query_header, table_header = extract_headers!(response)
-
-        if query_header[:type] == Q_TABLE
-          unless query_header[:rows] == response.size
-            raise QueryError, "Amount of fetched rows does not match header value (#{response.size} instead of #{query_header[:rows]})"
-          end
-          response = parse_rows(query_header, table_header, response.join("\n"))
-        else
-          response = true
-        end
-
-        response
+        parse_response response
       end
 
       alias :select_rows :query
@@ -39,6 +28,20 @@ module MonetDB
 
     private
 
+      def parse_response(response)
+        query_header, table_header = extract_headers!(response)
+
+        if query_header[:type] == Q_TABLE
+          unless query_header[:rows] == response.size
+            disconnect if reconnect?
+            raise QueryError, "Amount of fetched rows does not match header value (#{response.size} instead of #{query_header[:rows]})"
+          end
+          parse_rows query_header, table_header, response.join("\n")
+        else
+          true
+        end
+      end
+
       def extract_headers!(response)
         [parse_query_header!(response), parse_scheme_header!(response)]
       end
@@ -49,6 +52,7 @@ module MonetDB
         raise QueryError, header if header[0].chr == MSG_ERROR
 
         unless header[0].chr == MSG_QUERY
+          ENV["MONETDB_QUERY_RESPONSE"] = ([header] + response).join("\n").inspect
           raise QueryError, "Expected an query header (#{MSG_QUERY}) but got (#{header[0].chr})"
         end
 

@@ -14,6 +14,13 @@ class SimpleConnection
     !@socket.nil?
   end
 
+  def reconnect?
+    false
+  end
+
+  def check_connectivity!
+  end
+
 private
 
   def socket
