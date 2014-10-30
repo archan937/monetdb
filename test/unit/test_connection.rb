@@ -36,6 +36,7 @@ module Unit
       describe "#connect" do
         it "defines an active socket" do
           TCPSocket.expects(:new).returns(socket = mock)
+          socket.expects(:setsockopt).with(Socket::SOL_SOCKET, Socket::SO_KEEPALIVE, true)
 
           assert_nil @connection.instance_variable_get(:@socket)
 

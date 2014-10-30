@@ -59,6 +59,7 @@ module MonetDB
     def connect
       disconnect if connected?
       @socket = TCPSocket.new config[:host], config[:port].to_i
+      socket.setsockopt Socket::SOL_SOCKET, Socket::SO_KEEPALIVE, true
       setup
       true
     end
