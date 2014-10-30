@@ -1,5 +1,9 @@
 = MonetDB CHANGELOG
 
+== Version 0.2.6 (October 30, 2014)
+
+* Keeping TCP socket with MonetDB alive
+
 == Version 0.2.5 (October 29, 2014)
 
 * Corrected disconnecting after getting invalid query header error
