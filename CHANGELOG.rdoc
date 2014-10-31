@@ -1,5 +1,9 @@
 = MonetDB CHANGELOG
 
+== Version 0.2.7 (October 31, 2014)
+
+* Corrected MonetDB::Connection#disconnect
+
 == Version 0.2.6 (October 30, 2014)
 
 * Keeping TCP socket with MonetDB alive
