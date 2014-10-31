@@ -60,7 +60,7 @@ module Unit
             @connection.instance_variable_set(:@socket, socket)
 
             assert_equal true, @connection.connected?
-            socket.expects(:disconnect)
+            socket.expects(:close)
 
             @connection.disconnect
 

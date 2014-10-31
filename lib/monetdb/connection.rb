@@ -65,7 +65,7 @@ module MonetDB
     end
 
     def disconnect
-      socket.disconnect if connected?
+      socket.close if connected?
       @socket = nil
     end
 
