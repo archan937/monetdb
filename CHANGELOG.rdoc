@@ -1,5 +1,9 @@
 = MonetDB CHANGELOG
 
+== Version 0.2.8 (November 27, 2014)
+
+* Supporting :wrd and :serial data types
+
 == Version 0.2.7 (October 31, 2014)
 
 * Corrected MonetDB::Connection#disconnect
