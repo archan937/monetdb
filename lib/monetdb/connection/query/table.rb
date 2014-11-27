@@ -38,7 +38,7 @@ module MonetDB
             case type
             when :varchar, :text
               parse_string_value value
-            when :int, :smallint, :bigint
+            when :int, :smallint, :bigint, :serial, :wrd
               parse_integer_value value
             when :double, :float, :real
               parse_float_value value
