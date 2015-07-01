@@ -71,6 +71,9 @@ module Unit
             message = "hKszBZEmQ1uOPYrpVFEc:merovingian:9:RIPEMD160,SHA256,SHA1,MD5:LIT:SHA512:"
             assert_equal ["#{[145].pack("v")}#{message}"], @connection.send(:pack, message)
 
+            message = "Message with multibyte chars: ✷"
+            assert_equal ["#{[67].pack("v")}#{message}"], @connection.send(:pack, message)
+
             message.expects(:scan).with(/.{1,#{MonetDB::Connection::MAX_MSG_SIZE}}/m).returns(%w(foobar bazqux paul))
             assert_equal [
               "#{[12].pack("v")}foobar",
