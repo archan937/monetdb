@@ -60,7 +60,6 @@ module MonetDB
       disconnect if connected?
       @socket = TCPSocket.new config[:host], config[:port].to_i
       socket.setsockopt Socket::SOL_SOCKET, Socket::SO_KEEPALIVE, true
-      socket.set_encoding 'utf-8'
       setup
       true
     end

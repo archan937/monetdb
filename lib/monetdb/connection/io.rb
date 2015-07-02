@@ -37,7 +37,7 @@ module MonetDB
         chunks = message.scan(/.{1,#{MAX_MSG_SIZE}}/m)
         chunks.each_with_index.to_a.collect do |chunk, index|
           last_bit = (index == chunks.size - 1) ? 1 : 0
-          length = [(chunk.bytes.size << 1) | last_bit].pack("v").force_encoding('utf-8')
+          length = [(chunk.bytes.to_a.size << 1) | last_bit].pack("v").force_encoding('utf-8')
           "#{length}#{chunk}"
         end.freeze
       end
