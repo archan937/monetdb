@@ -1,3 +1,5 @@
+#encoding: UTF-8
+
 require_relative "../../test_helper"
 
 module Unit
@@ -66,10 +68,13 @@ module Unit
         describe "#pack" do
           it "returns chunks provided with a length header" do
             message = "BIG:monetdb:{MD5}6432e841c9943d524b9b922ee1e5924a:sql:test_drive:"
-            assert_equal ["#{[131].pack("v")}#{message}"], @connection.send(:pack, message)
+            assert_equal ["#{[131].pack("v").force_encoding('utf-8')}#{message}"], @connection.send(:pack, message)
 
             message = "hKszBZEmQ1uOPYrpVFEc:merovingian:9:RIPEMD160,SHA256,SHA1,MD5:LIT:SHA512:"
-            assert_equal ["#{[145].pack("v")}#{message}"], @connection.send(:pack, message)
+            assert_equal ["#{[145].pack("v").force_encoding('utf-8')}#{message}"], @connection.send(:pack, message)
+
+            message = "Message with multibyte chars: ✷"
+            assert_equal ["#{[67].pack("v").force_encoding('utf-8')}#{message}"], @connection.send(:pack, message)
 
             message.expects(:scan).with(/.{1,#{MonetDB::Connection::MAX_MSG_SIZE}}/m).returns(%w(foobar bazqux paul))
             assert_equal [

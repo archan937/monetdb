@@ -36,7 +36,7 @@ module MonetDB
         def parse_value(type, value)
           unless value == "NULL"
             case type
-            when :varchar, :text
+            when :varchar, :text, :string, :clob
               parse_string_value value
             when :int, :smallint, :bigint, :serial, :wrd
               parse_integer_value value
@@ -46,7 +46,7 @@ module MonetDB
               parse_date_value value
             when :timestamp
               parse_date_time_value value
-            when :tinyint
+            when :tinyint, :boolean
               parse_boolean_value value
             else
               raise NotImplementedError, "Cannot parse value of type #{type.inspect}"
