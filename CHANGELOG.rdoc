@@ -1,5 +1,9 @@
 = MonetDB CHANGELOG
 
+== Version 0.2.9 (July 3, 2015)
+
+* Support for UTF-8 and extra data types (credits to https://github.com/dlorson)
+
 == Version 0.2.8 (November 27, 2014)
 
 * Supporting :wrd and :serial data types
