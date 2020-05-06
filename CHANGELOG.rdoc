@@ -1,5 +1,9 @@
 = MonetDB CHANGELOG
 
+== Version 0.2.10 (May 6, 2020)
+
+* Allow negative time zone offsets from GMT (credits to https://github.com/WillyT59)
+
 == Version 0.2.9 (July 3, 2015)
 
 * Support for UTF-8 and extra data types (credits to https://github.com/dlorson)
