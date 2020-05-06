@@ -101,7 +101,16 @@ module MonetDB
         return false if @timezone_interval_set
 
         offset = Time.now.gmt_offset / 3600
-        interval = "'+#{offset.to_s.rjust(2, "0")}:00'"
+
+        # BT: patch to allow for negative offsets from GMT
+
+        # interval = "'+#{offset.to_s.rjust(2, "0")}:00'"
+
+        offset_sign = offset<0?"-":"+"
+        offset = offset.abs
+        interval = "'#{offset_sign.to_s}#{offset.to_s.rjust(2, "0")}:00'"
+
+        # BT: end patch
 
         write "sSET TIME ZONE INTERVAL #{interval} HOUR TO MINUTE;"
         response = read
